@@ -53,7 +53,7 @@ class GDrive:
         file = open (file_path, "rb")
 
         total_size: int = file_path.stat ().st_size
-        chunk_size_bytes = min (total_size // 100, 256 * 1024)
+        chunk_size_bytes = max (total_size // 100, 256 * 1024)
 
         chunk_count = total_size // chunk_size_bytes
         last_chunk_size = total_size % chunk_size_bytes
