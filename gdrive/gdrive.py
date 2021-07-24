@@ -27,20 +27,20 @@ class GDrive:
         container [key] = val
         with open (_path, "w") as out_file:
             json.dump (data, out_file)
-    def upload (self, dest_folder_id: str, file_path: pathlib.Path, chunk_size_bytes: int = 256 * 1024):
+    def upload (self, dest_folder_id: str, file_path: pathlib.Path):
         if file_path.is_dir ():
             subdir_id = self._make_subdir (dest_folder_id, file_path.name)
             for subitem in file_path.iterdir ():
-                self.upload (dest_folder_id = subdir_id, file_path = subitem, chunk_size_bytes = chunk_size_bytes)
+                self.upload (dest_folder_id = subdir_id, file_path = subitem)
         else:
-            self._upload (dest_folder_id = dest_folder_id, file_path = file_path, chunk_size_bytes = chunk_size_bytes)
+            self._upload (dest_folder_id = dest_folder_id, file_path = file_path)
     def _make_subdir (self, parent_folder_id: str, folder_name: str) -> str:
         return self._make_request ("POST", url = "https://www.googleapis.com/drive/v3/files", is_json = True, json = {
             "parents": [parent_folder_id],
             "name": folder_name,
             "mimeType": "application/vnd.google-apps.folder"
         }) ["id"]
-    def _upload (self, dest_folder_id: str, file_path: pathlib.Path, chunk_size_bytes: int = 256 * 1024):
+    def _upload (self, dest_folder_id: str, file_path: pathlib.Path):
         mime_type = mimetypes.guess_type (file_path.name) [0]
         if mime_type is None: mime_type = "application/octet-stream"
         initial_response = self._make_request ("POST", url = "https://www.googleapis.com/upload/drive/v3/files", is_json = False, params = {"uploadType": "resumable"}, json = {
@@ -53,6 +53,7 @@ class GDrive:
         file = open (file_path, "rb")
 
         total_size: int = file_path.stat ().st_size
+        chunk_size_bytes = total_size // 100
 
         chunk_count = total_size // chunk_size_bytes
         last_chunk_size = total_size % chunk_size_bytes
